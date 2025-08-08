@@ -31,6 +31,7 @@ const (
 	ValueAddTransformer
 	HelmChartInflationGenerator
 	ReplacementTransformer
+	CELValidator
 )
 
 var stringToBuiltinPluginTypeMap map[string]BuiltinPluginType
@@ -109,6 +110,7 @@ var TransformerFactories = map[BuiltinPluginType]func() resmap.TransformerPlugin
 	ReplacementTransformer:         builtins.NewReplacementTransformerPlugin,
 	ReplicaCountTransformer:        builtins.NewReplicaCountTransformerPlugin,
 	ValueAddTransformer:            builtins.NewValueAddTransformerPlugin,
+	CELValidator:                   builtins.NewCELValidatorPlugin,
 	// Do not wired SortOrderTransformer as a builtin plugin.
 	// We only want it to be available in the top-level kustomization.
 	// See: https://github.com/kubernetes-sigs/kustomize/issues/3913

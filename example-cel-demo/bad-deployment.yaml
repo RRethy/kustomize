@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bad-app
+  labels:
+    app: backend
+    # Missing 'team' label! ❌
+spec:
+  replicas: 10  # ❌ Too many replicas (max is 5)
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      # Missing securityContext! ❌ Will fail non-root check
+      containers:
+      - name: api
+        image: myapi:latest
+        resources:
+          limits:
+            cpu: "2"
+            memory: "2Gi"  # ❌ Over 1Gi limit
+          requests:
+            cpu: "1"
+            memory: "1Gi"

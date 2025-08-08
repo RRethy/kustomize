@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: good-app
+  labels:
+    app: frontend
+    team: platform
+    environment: production
+spec:
+  replicas: 3  # ✓ Between 1-5
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+        team: platform
+    spec:
+      securityContext:
+        runAsUser: 1000  # ✓ Non-root user
+        runAsGroup: 3000
+        fsGroup: 2000
+      containers:
+      - name: web
+        image: nginx:1.21
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512Mi"  # ✓ Under 1Gi
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+        ports:
+        - containerPort: 8080
+          name: http

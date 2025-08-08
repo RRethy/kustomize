@@ -1,0 +1,66 @@
+# Example showing CEL validation in action
+# This would be processed by kustomize with the CEL validator
+
+# ✅ VALID: This deployment passes all checks
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: valid-web-app
+  labels:
+    app: web
+    team: frontend  # ✓ Has both required labels
+spec:
+  replicas: 3  # ✓ Within 1-5 limit
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+        team: frontend
+    spec:
+      securityContext:
+        runAsUser: 1000  # ✓ Non-root user (UID >= 1000)
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        resources:
+          limits:
+            memory: "256Mi"  # ✓ Under 1Gi limit
+            cpu: "100m"
+
+# ❌ INVALID: This would fail validation
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: invalid-app
+  labels:
+    app: backend
+    # ❌ Missing 'team' label!
+spec:
+  replicas: 10  # ❌ Too many replicas (max is 5)
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      # ❌ No securityContext = runs as root
+      containers:
+      - name: api
+        image: api:latest
+        resources:
+          limits:
+            memory: "4Gi"  # ❌ Over 1Gi limit
+            cpu: "2"
+
+# The CEL Validator would check:
+# 1. Labels: has(object.metadata.labels) && 'app' in object.metadata.labels && 'team' in object.metadata.labels
+# 2. Replicas: object.spec.replicas >= 1 && object.spec.replicas <= 5
+# 3. Security: object.spec.template.spec.securityContext.runAsUser >= 1000
+# 4. Memory: container.resources.limits.memory <= "1Gi"

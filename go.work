@@ -22,6 +22,7 @@ use (
 	./kustomize
 	./kyaml
 	./plugin/builtin/annotationstransformer
+	./plugin/builtin/celvalidator
 	./plugin/builtin/configmapgenerator
 	./plugin/builtin/hashtransformer
 	./plugin/builtin/helmchartinflationgenerator

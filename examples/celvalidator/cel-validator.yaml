@@ -1,0 +1,46 @@
+apiVersion: builtin
+kind: CELValidator
+metadata:
+  name: resource-validator
+validations:
+  # Ensure deployments have reasonable replica counts
+  - expression: "object.spec.replicas >= 1 && object.spec.replicas <= 10"
+    message: "Deployment replicas must be between 1 and 10"
+    resourceSelector:
+      kind: Deployment
+
+  # Ensure all resources have required labels
+  - expression: "has(object.metadata.labels) && 'app' in object.metadata.labels"
+    message: "All resources must have an 'app' label"
+
+  # Ensure containers have resource limits
+  - expression: |
+      object.spec.template.spec.containers.all(container,
+        has(container.resources) &&
+        has(container.resources.limits) &&
+        has(container.resources.limits.memory) &&
+        has(container.resources.limits.cpu)
+      )
+    message: "All containers must have CPU and memory limits"
+    resourceSelector:
+      kind: Deployment
+
+  # Security: Ensure containers don't run as root
+  - expression: |
+      !has(object.spec.template.spec.securityContext) ||
+      !has(object.spec.template.spec.securityContext.runAsUser) ||
+      object.spec.template.spec.securityContext.runAsUser != 0
+    message: "Containers must not run as root (UID 0)"
+    resourceSelector:
+      kind: Deployment
+
+  # Security: Ensure containers are not privileged
+  - expression: |
+      object.spec.template.spec.containers.all(container,
+        !has(container.securityContext) ||
+        !has(container.securityContext.privileged) ||
+        container.securityContext.privileged == false
+      )
+    message: "Containers must not run in privileged mode"
+    resourceSelector:
+      kind: Deployment

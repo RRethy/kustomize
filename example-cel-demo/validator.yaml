@@ -1,0 +1,45 @@
+apiVersion: builtin
+kind: CELValidator
+metadata:
+  name: production-validator
+validations:
+  # Rule 1: Deployments must have 1-5 replicas
+  - expression: "object.spec.replicas >= 1 && object.spec.replicas <= 5"
+    message: "❌ Deployments must have between 1 and 5 replicas for cost control"
+    resourceSelector:
+      kind: Deployment
+
+  # Rule 2: All resources must have required labels
+  - expression: |
+      has(object.metadata.labels) && 
+      'app' in object.metadata.labels && 
+      'team' in object.metadata.labels
+    message: "❌ Resources must have 'app' and 'team' labels for tracking"
+
+  # Rule 3: Containers must have memory limits under 1Gi
+  - expression: |
+      object.spec.template.spec.containers.all(container,
+        has(container.resources) &&
+        has(container.resources.limits) &&
+        has(container.resources.limits.memory) &&
+        container.resources.limits.memory.matches('^([0-9]+(\\.[0-9]+)?)(Mi|M)$') ||
+        container.resources.limits.memory == "1Gi"
+      )
+    message: "❌ Container memory limits must be <= 1Gi (use Mi units or exactly 1Gi)"
+    resourceSelector:
+      kind: Deployment
+
+  # Rule 4: Services must be ClusterIP type
+  - expression: "object.spec.type == 'ClusterIP'"
+    message: "❌ Only ClusterIP services allowed (no LoadBalancer or NodePort)"
+    resourceSelector:
+      kind: Service
+
+  # Rule 5: No root containers
+  - expression: |
+      has(object.spec.template.spec.securityContext) &&
+      has(object.spec.template.spec.securityContext.runAsUser) &&
+      object.spec.template.spec.securityContext.runAsUser >= 1000
+    message: "❌ Containers must run as non-root user (UID >= 1000)"
+    resourceSelector:
+      kind: Deployment
